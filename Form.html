@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library Management System</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+  </head>
+  <style>
+    #formContainer {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #bgVideo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    #loginForm {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+      width: 350px;
+      text-align: center;
+      transition: all 0.5s ease;
+    }
+
+    #loginForm .data {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .data label {
+      position: absolute;
+      top: -15px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 2px 5px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .data input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    #loginForm input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    /* Button Styling */
+    #loginForm button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    #loginForm button:hover {
+      background: #2980b9;
+    }
+
+    /* Book Section Styling */
+    #bookSection {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f8f9fa;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+      transform: translateY(100%);
+      transition: transform 0.7s ease-in-out;
+      z-index: 10;
+    }
+
+    #bookSection.show {
+      transform: translateY(0);
+    }
+
+    /* Modal ka background */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Modal ka content (centered) */
+    .modal-content {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      max-width: 90%;
+      margin: 20px auto;
+    }
+
+    .modal-content h3 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 90%;
+      padding: 10px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+      background-color: #fff;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #3498db;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    #saveBookBtn,
+    #confirmAssignBtn {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    #saveBookBtn:hover,
+    #confirmAssignBtn:hover {
+      background-color: #27ae60;
+    }
+
+    /* Close button */
+    .close-btn {
+      float: right;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      color: #e74c3c;
+    }
+
+    button {
+      background: rgb(64, 151, 249);
+      color: #fefefe;
+      border-radius: 5px;
+    }
+
+    .unassign-btn {
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .unassign-btn:hover {
+      background-color: #cc0000;
+    }
+
+    .table-heading {
+      margin: 20px 0 10px 0;
+    }
+  </style>
+  <body>
+    <div id="container">
+      <div
+        id="formContainer"
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        "
+      >
+        <video autoplay loop muted playsinline id="bgVideo">
+          <source src="books-background.mp4" type="video/mp4" />
+        </video>
+        <form action="" id="loginForm">
+          <div class="data">
+            <label for="name">Name:</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              placeholder="Enter name"
+              required
+            />
+          </div>
+          <div class="data">
+            <label for="email">Email:</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Enter email"
+              required
+            />
+          </div>
+          <div class="data">
+            <label for="password">Password:</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter password"
+              required
+            />
+          </div>
+          <div class="Submit">
+            <button type="submit">Login</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="bookSection">
+        <button id="addBookBtn">Add Book</button>
+        <button
+          id="assignBookBtn"
+          data-toggle="modal"
+          data-target="#assignBookModal"
+        >
+          Assign Book
+        </button>
+
+        <div class="table-heading"><h3>📚 Books List</h3></div>
+        <table id="booksTable" class="display"></table>
+
+        <div class="table-heading"><h3>📖 Assigned Books</h3></div>
+        <table id="assignedBooksTable" class="display"></table>
+
+        <div id="addBookModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Add Book</h3>
+            <div class="form-group">
+              <label>Book Name:</label>
+              <input type="text" id="bookNameInput" required />
+            </div>
+            <div class="form-group">
+              <label>Author Name:</label>
+              <input type="text" id="authorNameInput" required />
+            </div>
+            <div class="form-group">
+              <label>Book Info:</label>
+              <input type="text" id="bookInfoInput" required />
+            </div>
+            <div class="modal-actions">
+              <button id="saveBookBtn">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="assignBookModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Assign Book</h3>
+            <div class="form-group">
+              <label>Select Book:</label>
+              <select id="selectBook"></select>
+            </div>
+            <div class="form-group">
+              <label>Select User:</label>
+              <select id="selectUser"></select>
+            </div>
+            <div class="modal-actions">
+              <button id="confirmAssignBtn">Assign</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        let booksTable = $("#booksTable").DataTable({
+          columns: [
+            { title: "Book Name" },
+            { title: "Author Name" },
+            { title: "Book Info" },
+          ],
+        });
+
+        let assignedBooksTable = $("#assignedBooksTable").DataTable({
+          columns: [
+            { title: "Book Name" },
+            { title: "Assigned To" },
+            { title: "Date" },
+            {
+              title: "Action",
+              render: function (data, type, row) {
+                return `<button class="unassign-btn" data-assignment-id="${row[3]}">Unassign</button>`;
+              },
+            },
+          ],
+        });
+
+        let existingBooks = [];
+        let existingassignedBooks = [];
+
+        $("#loginForm").submit(function (event) {
+          event.preventDefault();
+          $.post(
+            "http://localhost:3000/login",
+            $("#loginForm").serialize(),
+            function () {
+              // Animation login form out
+              $("#loginForm").animate(
+                {
+                  opacity: 0,
+                  marginTop: "-=50px",
+                },
+                500,
+                function () {
+                  $(this).hide();
+
+                  // Show and animation the book section up
+                  $("#bookSection").addClass("show");
+
+                  fetchBooks();
+                  fetchAssignedBooks();
+                }
+              );
+            }
+          );
+        });
+           //pop up buttons
+        $("#addBookBtn").click(function () {
+          console.log("Assign Book button clicked!");
+          $("#addBookModal").fadeIn();
+        });
+        $("#assignBookBtn").click(function () {
+          console.log("Assign Book button clicked!");
+          $("#assignBookModal").fadeIn();
+        });
+
+        $(".close-btn").click(function () {
+          $(".modal").fadeOut();
+        });
+
+        $("#saveBookBtn").click(function () {
+          let bookName = $("#bookNameInput").val().trim();
+          let authorName = $("#authorNameInput").val().trim();
+          let bookInfo = $("#bookInfoInput").val().trim();
+
+          if (existingBooks.includes(bookName.toLowerCase())) {
+            alert(" 🤔see in table book already exist ");
+            return;
+          }
+
+          if (bookName && authorName && bookInfo) {
+            $.post(
+              "http://localhost:3000/addBook",
+              { bookName, authorName, bookInfo },
+              function () {
+                $("#addBookModal").fadeOut();
+                $("#bookNameInput").val("");
+                $("#authorNameInput").val("");
+                $("#bookInfoInput").val("");
+                fetchBooks();
+              }
+            );
+          }
+        });
+
+        $("#assignBookBtn").click(function () {
+          $("#assignBookModal").fadeIn();
+          $.get("http://localhost:3000/getBooks", function (data) {
+            console.log("Books Data:", data);
+            $("#selectBook").empty();
+            data.forEach((book) => {
+              $("#selectBook").append(
+                `<option value="${book._id}">${book.bookName}</option>`
+              );
+            });
+          }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.error("Error fetching books:", textStatus, errorThrown);
+          });
+
+          $.get("http://localhost:3000/getUsers", function (data) {
+            console.log("Users Data:", data);
+            $("#selectUser").empty();
+            data.forEach((user) => {
+              $("#selectUser").append(
+                `<option value="${user._id}">${user.name}</option>`
+              );
+            });
+          }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.error("Error fetching users:", textStatus, errorThrown);
+          });
+        });
+
+        $("#confirmAssignBtn").click(function () {
+          let bookId = $("#selectBook").val();
+          let userId = $("#selectUser").val();
+
+          let isAlreadyAssigned = existingassignedBooks.some(
+            (assignment) =>
+              assignment.bookId === bookId && assignment.userId === userId
+          );
+
+          if (isAlreadyAssigned) {
+            alert("tid book already assigned to user");
+            return;
+          }
+
+          if (bookId && userId) {
+            $.post(
+              "http://localhost:3000/assignBook",
+              { bookId, userId },
+              function () {
+                $("#assignBookModal").fadeOut();
+                fetchAssignedBooks();
+              }
+            );
+          }
+        });
+
+        function fetchBooks() {
+          $.get("http://localhost:3000/getBooks", function (data) {
+            booksTable.clear();
+            existingBooks = data.map((book) => book.bookName.toLowerCase());
+            data.forEach((book) => {
+              booksTable.row
+                .add([book.bookName, book.authorName, book.bookInfo])
+                .draw();
+            });
+          });
+        }
+
+        let currentUnassignHandler = null;
+
+        function fetchAssignedBooks() {
+          $.get("http://localhost:3000/getAssignedBooks", function (data) {
+            assignedBooksTable.clear().destroy();
+
+            assignedBooksTable = $("#assignedBooksTable").DataTable({
+              columns: [
+                { title: "Book Name" },
+                { title: "Assigned To" },
+                { title: "Date" },
+                {
+                  title: "Action",
+                  render: function (data, type, row) {
+                    return `<button class="unassign-btn" data-assignment-id="${row[3]}">Unassign</button>`;
+                  },
+                },
+              ],
+              drawCallback: function () {
+                $(".unassign-btn")
+                  .off("click")
+                  .on("click", function () {
+                    const assignmentId = $(this).data("assignment-id");
+                    unassignBook(assignmentId);
+                  });
+              },
+            });
+
+            existingassignedBooks = data.map((assignment) => ({
+              bookId: assignment.bookId ? assignment.bookId._id : null,
+              userId: assignment.userId ? assignment.userId._id : null,
+            }));
+
+            data.forEach((assignment) => {
+              const bookName = assignment.bookId
+                ? assignment.bookId.bookName
+                : "Unknown Book";
+              const userName = assignment.userId
+                ? assignment.userId.name
+                : "Unknown User";
+              const assignedDate = new Date(
+                assignment.assignedDate
+              ).toLocaleDateString();
+
+              assignedBooksTable.row.add([
+                bookName,
+                userName,
+                assignedDate,
+                assignment._id,
+              ]);
+            });
+
+            assignedBooksTable.draw();
+          });
+        }
+
+        function unassignBook(assignmentId) {
+          if (!assignmentId) {
+            console.error("Assignment ID is undefined!");
+            return;
+          }
+
+          if (confirm("Are you sure you want to unassign this book?")) {
+            $.ajax({
+              url: `http://localhost:3000/unassignBook/${assignmentId}`,
+              type: "DELETE",
+              success: function (result) {
+                alert("Book unassigned successfully");
+                fetchAssignedBooks();
+              },
+              error: function (err) {
+                console.error("Error unassigning book:", err);
+                if (err.status === 404) {
+                  fetchAssignedBooks();
+                } else {
+                  alert("Failed to unassign book. Please try again.");
+                }
+              },
+            });
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
